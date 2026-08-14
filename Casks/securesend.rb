@@ -16,7 +16,9 @@ cask "securesend" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :sonoma"
+  # The minimum, not the exact release. Matches LSMinimumSystemVersion in the
+  # bundle, which is macOS 14.
+  depends_on macos: :sonoma
 
   app "SecureSend.app"
 

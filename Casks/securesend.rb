@@ -1,6 +1,6 @@
-# One number lives in two places here, and the release workflow in
-# devosurf/securesend-macos writes both: the version and the sha256 of the dmg it
-# just notarized. Nothing in this file is edited by hand at release time.
+# The version and the sha256 are written by .github/workflows/bump.yml, which
+# follows devosurf/securesend-macos's release page and hashes the dmg itself.
+# Neither line is edited by hand.
 
 cask "securesend" do
   version "0.2.0"

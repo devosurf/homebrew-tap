@@ -1,0 +1,81 @@
+name: bump
+
+# The casks follow their apps' releases without a cross-repo secret.
+#
+# The obvious build is the other way round: each app's release workflow pushes
+# here the moment it publishes. That needs a credential this organisation cannot
+# give it. A workflow's own GITHUB_TOKEN stops at its own repository, deploy keys
+# are disabled org-wide, and a personal access token is a secret somebody has to
+# make by hand and replace when it expires.
+#
+# So this repository asks rather than being told. It reads the public releases
+# api, downloads the file it is about to vouch for, and hashes it here, which is
+# a better check than copying a number out of release notes: the sha256 in a cask
+# is what stands between a reader and a swapped download, and this one is
+# measured from the bytes GitHub actually serves.
+#
+# The cost is lag. A release is picked up on the next run rather than instantly,
+# and `gh workflow run bump.yml --repo devosurf/homebrew-tap` closes that gap
+# when somebody is standing there waiting to `brew upgrade`.
+
+on:
+  schedule:
+    # Nothing here is urgent, and a cask a few hours behind its release page is
+    # a cask nobody notices. Off the hour, because everybody's cron is on it.
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Follow the newest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cask="Casks/securesend.rb"
+          repo="devosurf/securesend-macos"
+
+          tag=$(gh release view --repo "$repo" --json tagName --jq .tagName)
+          version="${tag#v}"
+          have=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$cask")
+
+          if [ -z "$version" ]; then
+            echo "The releases api named no tag, so there is nothing to follow." >&2
+            exit 1
+          fi
+          if [ "$version" = "$have" ]; then
+            echo "The cask is already at $version."
+            exit 0
+          fi
+
+          # Hashed from the file itself rather than read out of the release
+          # notes, because the sha256 in a cask is the thing that would catch a
+          # swapped download, and a number copied from prose checks nothing.
+          curl -fsSL -o "$RUNNER_TEMP/app.dmg" \
+            "https://github.com/$repo/releases/download/$tag/SecureSend-$version.dmg"
+          sum=$(sha256sum "$RUNNER_TEMP/app.dmg" | cut -d " " -f 1)
+
+          sed -i -E "s|^  version \".*\"$|  version \"$version\"|" "$cask"
+          sed -i -E "s|^  sha256 \".*\"$|  sha256 \"$sum\"|" "$cask"
+
+          # sed says nothing when it matches nothing, and a cask silently left on
+          # the old version is an upgrade nobody gets and nobody is told about.
+          if ! grep -q "^  version \"$version\"$" "$cask" \
+            || ! grep -q "^  sha256 \"$sum\"$" "$cask"; then
+            echo "The cask was not rewritten. Its version and sha256 lines are not the shape this expects:" >&2
+            head -n 12 "$cask" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "securesend $version"
+          git push

@@ -3,8 +3,8 @@
 # just notarized. Nothing in this file is edited by hand at release time.
 
 cask "securesend" do
-  version "0.2.0"
-  sha256 "e0d6067d02e2f7bf0c56a4e66005be59dfa31b0994cf83e87a2dc0587486f49e"
+  version "0.1.0"
+  sha256 "1111111111111111111111111111111111111111111111111111111111111111"
 
   url "https://github.com/devosurf/securesend-macos/releases/download/v#{version}/SecureSend-#{version}.dmg"
   name "SecureSend"

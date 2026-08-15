@@ -3,8 +3,8 @@
 # Neither line is edited by hand.
 
 cask "securesend" do
-  version "0.2.0"
-  sha256 "e0d6067d02e2f7bf0c56a4e66005be59dfa31b0994cf83e87a2dc0587486f49e"
+  version "0.3.0"
+  sha256 "908393402152e3462cbec5768e30eb0a255a4eb855085bcaf0f87deaed6a8207"
 
   url "https://github.com/devosurf/securesend-macos/releases/download/v#{version}/SecureSend-#{version}.dmg"
   name "SecureSend"
